@@ -14,11 +14,12 @@
 
 
 
-repeat.multipatt <- function(repeats = 100, matrix.name, cluster.name, p.cutoff = .05, func.name = "IndVal.g", phi = FALSE, plot.please = TRUE, plot.colors = c("deeppink2", "cyan3", "yellowgreen", "gray 50", "violet"), freq.cutoff = .5, xlab.input = "Indicator Species \n(freq > 50%)", ylab.input = "Mean Indicator Value over 100 Runs", quiet = TRUE, stat.cutoff = .75) {
+repeat.multipatt <- function(repeats = 100, matrix.name, cluster.name, p.cutoff = .1, func.name = "IndVal.g", phi = FALSE, plot.please = TRUE, plot.colors = c("deeppink2", "cyan3", "yellowgreen", "gray 50", "violet"), freq.cutoff = .5, xlab.input = "Indicator Species \n(freq > 50%)", ylab.input = "Mean Indicator Value over 100 Runs", quiet = TRUE, stat.cutoff = .5, graph.stat.cutoff = .75) {
 
     library(ggplot2)
     library(dplyr)
     library(indicspecies)
+    library(stringr)
 
 
 if (freq.cutoff != .5) {
@@ -53,7 +54,7 @@ for (i in 1:repeats) {
                               cluster = cluster.name, func = func.name)
 
     mp.sign <- multipatt.out$sign[complete.cases(multipatt.out$sign),]
-    mp.sign <- mp.sign[mp.sign$p.value <= p.cutoff, ]
+    mp.sign <- mp.sign[mp.sign$p.value <= p.cutoff & mp.sign$stat >= stat.cutoff, ]
     mp.sign$species <- rownames(mp.sign)
 
         if ( length(multipatt.out$A) > 0 ) {
@@ -89,6 +90,21 @@ for (i in 1:repeats) {
     i <- i + 1
 }
 
+ct <- FALSE
+
+if (!(any(colnames(mp.sign.dump) == "s.1"))) {
+    ct <- TRUE
+    
+colname.temp <- tibble(group = colnames(mp.sign.dump))
+colname.temp$number <- 1:nrow(colname.temp)
+
+colnames(mp.sign.dump)[1:sum(str_detect(colnames(mp.sign.dump), "s\\."))] <- 
+                paste("s.", seq.int(from = 1, to = sum(str_detect(colnames(mp.sign.dump), "s\\."))), sep = "")
+
+colname.temp <- colname.temp[str_detect(colname.temp$group, "s\\.") , ]
+colname.temp$groupname <- str_sub(colname.temp$group, 3, -1)
+    
+    }
 
 
 if (!(any(colnames(mp.sign.dump) == "s.3"))) {mp.sign.dump$s.3 = rep(0, times = length(mp.sign.dump$s.1))}
@@ -116,15 +132,36 @@ mp.summary <- group_by(mp.sign.dump, species) %>%
                            )
 
 mp.summary$group <- ifelse(grepl("[1-9]..[1-9]", mp.summary$group),
-                                gsub(pattern = "\\.\\.", replacement = " & ", mp.summary$group), mp.summary$group)
-mp.summary$group <- paste("Cluster", gsub(pattern = "\\.", replacement = "", mp.summary$group), sep = " ")
+                           gsub(pattern = "\\.\\.", replacement = " & ", mp.summary$group),
+                           mp.summary$group)
+
+
+if(ct == TRUE) {
+    
+    mp.summary$groupname <- mp.summary$group
+    mp.summary$groupname <- gsub(pattern = "\\.", replacement = "", mp.summary$group)
+    g = 1
+        for (g in 1:max(colname.temp$number)) {
+            
+                mp.summary$groupname <- gsub(x = mp.summary$groupname,
+                                             pattern = as.character(g),
+                                             replacement = colname.temp$groupname[g])
+            
+            }
+    
+}
+
+
+mp.summary$group <- paste("Group", gsub(pattern = "\\.", replacement = "", mp.summary$group), sep = " ")
+
+
 
 
 
 
 if (func.name %in% c("IndVal", "IndVal.g")) {
         mp.AB.summary  <- group_by(mp.AB.dump, species) %>%
-                            summarize_each(funs(mean))
+                            summarize_all(funs(mean))
             mp.AB.summary$i <- NULL
             colnames(mp.AB.summary)[-1] <- paste(colnames(mp.AB.summary[-1]), "mean", sep = ".")
 
@@ -144,7 +181,7 @@ if (plot.please == TRUE) {
 
     if (nrow(subset(mp.summary, frequency.sp > freq.cutoff)) > 0) {
 
-        mp.plot <- ggplot(subset(mp.summary, frequency.sp > freq.cutoff & mean.stat > stat.cutoff),
+        mp.plot <- ggplot(subset(mp.summary, frequency.sp > freq.cutoff & mean.stat > graph.stat.cutoff),
                           aes(x = reorder(species, mean.stat))) +
                 geom_bar(aes(y = mean.stat, fill = group), alpha = .75, stat = "identity") +
                 geom_text(aes(y = mean.stat, label = mean.stat), hjust = 1.2) +
@@ -171,3 +208,21 @@ else return(mp.summary)
 }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+## Testing
+# matrix.name = sqrt(sapro.transpose)
+# cluster.name = veg.group.soil[[3]]
+# func.name = "r.g"
+# repeats = 1
+# plot.please = FALSE
+# quiet = FALSE

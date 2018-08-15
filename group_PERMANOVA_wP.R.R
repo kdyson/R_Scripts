@@ -62,27 +62,20 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
                                          adj.disp.F.pval = rep(NA)
                               )
      col.numbers <- which(colnames(var.table) %in% var.names)
-     
+
 
      ## Attempting to get the names from the tables
      #var.table.t <- as.character(quote(var.table, env = ))
      #species.table.t <- as.character(var.table)
 
-     
 
      ## Populate the output table.
 
      for (i in 1:length(var.names)) {
 
-        ## No parallel argument--while it would be nice, 2.5.1 vegan + parallel
-        ## update fubar'd something and taking it out was the easiest way to fix
-        ## it. 
-         
+
           temp <- adonis2(formula = as.formula(paste(species.table.c, "~", control.vars, "+", var.names[i])),
-                          permutations = perms, 
-                          method = "bray",
-                          by = by.adonis2,
-                          data = var.table)
+                          parallel = 2, permutations = perms, method = "bray", by = by.adonis2, data = var.table)
 
           output$var.explnd[i] <- temp$SumOfSqs[1 + num.control.vars] / sum(temp$SumOfSqs)
           output$avg.var.explnd[i] <- output$var.explnd[i] / temp$Df[1 + num.control.vars]
