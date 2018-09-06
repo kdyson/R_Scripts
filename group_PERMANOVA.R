@@ -24,7 +24,6 @@ PERMANOVA.omega2 <- function(adonis2.object, num.control.vars) {
 }
 
 
-
 ## Note that I have some defaults for adonis2: two processors (parallel = 2),
 ## 99999 permutations, and using the bray-curtis distance matrix (method =
 ## "bray")
@@ -113,6 +112,70 @@ return(output)
      
      
 }
+
+
+group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = "", species.vector, species.vector.c, num.control.vars = 0, by.adonis2 = "terms", perms = 99999, method = "euclid") {
+    
+    ## need to order columns otherwise the order of the columns and the order of col.numbers is incorrect.
+    
+    var.table <- var.table[ , order(colnames(var.table))]
+    var.names <- var.names[order(var.names)]
+    
+    
+    
+    output <- data.frame(row.names = var.names,
+                         var.explnd = rep(NA, times = length(var.names)),
+                         avg.var.explnd = rep(NA),
+                         pseudo.F = rep(NA),
+                         F.pval = rep(NA),
+                         adj.F.pval = rep(NA),
+                         AICc = rep(NA)
+    )
+    col.numbers <- which(colnames(var.table) %in% var.names)
+    
+    
+    ## Attempting to get the names from the tables
+    #var.table.t <- as.character(quote(var.table, env = ))
+    #species.table.t <- as.character(var.table)
+    
+    
+    
+    ## Populate the output table.
+    
+    for (i in 1:length(var.names)) {
+        
+        ## No parallel argument--while it would be nice, 2.5.1 vegan + parallel
+        ## update fubar'd something and taking it out was the easiest way to fix
+        ## it. 
+        
+        temp <- adonis2(formula = as.formula(paste(species.vector.c, "~", control.vars, "+", var.names[i])),
+                        permutations = perms, 
+                        method = method,
+                        by = by.adonis2,
+                        data = var.table)
+        
+        output$var.explnd[i] <- temp$SumOfSqs[1 + num.control.vars] / sum(temp$SumOfSqs)
+        output$avg.var.explnd[i] <- output$var.explnd[i] / temp$Df[1 + num.control.vars]
+        output$omega2[i] <- PERMANOVA.omega2(temp, num.control.vars)
+        output$pseudo.F[i] <- temp$F[num.control.vars + 1]
+        output$F.pval[i] <- temp$`Pr(>F)`[num.control.vars + 1]
+        output$AICc[i] <- AICc.PERMANOVA2(temp)[3]
+        
+        
+        
+        # the ordering is so that col.names[i] works!
+        
+
+    }
+    
+    output$adj.F.pval <- p.adjust(p = output$F.pval, method = "holm")
+
+    return(output)
+    
+    
+    
+}
+
 
 
 ## with time, test:
