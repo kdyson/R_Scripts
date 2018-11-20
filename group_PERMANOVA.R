@@ -77,11 +77,16 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
         ## update fubar'd something and taking it out was the easiest way to fix
         ## it. 
          
-          temp <- adonis2(formula = as.formula(paste(species.table.c, "~", control.vars, "+", var.names[i])),
-                          permutations = perms, 
-                          method = "bray",
-                          by = by.adonis2,
-                          data = var.table)
+         temp <-
+             adonis2(
+                 formula = as.formula(paste(
+                     species.table.c, "~", control.vars, "+", var.names[i]
+                 )),
+                 permutations = perms,
+                 method = "bray",
+                 by = by.adonis2,
+                 data = var.table
+             )
 
           output$var.explnd[i] <- temp$SumOfSqs[1 + num.control.vars] / sum(temp$SumOfSqs)
           output$avg.var.explnd[i] <- output$var.explnd[i] / temp$Df[1 + num.control.vars]
@@ -93,19 +98,36 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
 
                # the ordering is so that col.names[i] works!
 
-               if (is.character(var.table[[col.numbers[i]]]) == TRUE | is.factor(var.table[[col.numbers[i]]]) == TRUE) {
-
-                    temp.disp <- anova(betadisper(vegdist(species.table, method = "bray"),
-                                                  as.factor(var.table[[col.numbers[i]]])))
-
-                    output$disp.F.pval[i] <- temp.disp$`Pr(>F)`[1]
-
-               }
-
+          if (is.character(var.table[[col.numbers[i]]]) == TRUE |
+              is.factor(var.table[[col.numbers[i]]]) == TRUE) {
+              
+              if (class(species.table) == "dist") {
+                  temp.disp <-
+                      anova(betadisper(
+                          species.table,
+                          as.factor(var.table[[col.numbers[i]]])
+                      ))
+                  
+                  output$disp.F.pval[i] <- temp.disp$`Pr(>F)`[1]
+                  
+              }
+              
+              else {temp.disp <-
+                  anova(betadisper(
+                      vegdist(species.table, method = "bray"),
+                      as.factor(var.table[[col.numbers[i]]])
+                  ))
+              
+              output$disp.F.pval[i] <- temp.disp$`Pr(>F)`[1]
+              }
+          }
+          
      }
-
-     output$adj.F.pval <- p.adjust(p = output$F.pval, method = "holm")
-     output$adj.disp.F.pval <- p.adjust(p = output$disp.F.pval, method = "holm")
+     
+     output$adj.F.pval <-
+         p.adjust(p = output$F.pval, method = "holm")
+     output$adj.disp.F.pval <-
+         p.adjust(p = output$disp.F.pval, method = "holm")
 
 return(output)
      
