@@ -42,7 +42,7 @@ PERMANOVA.omega2 <- function(adonis2.object, num.control.vars) {
      ## by.adonsi2 is to pass through for the by = argument in adonis2
 
 
-group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = "", species.table, species.table.c, num.control.vars = 0, by.adonis2 = "terms", perms = 99999) {
+group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = "", species.table, species.table.c, num.control.vars = 0, by.adonis2 = "terms", perms = 99999, method = "bray") {
 
      ## need to order columns otherwise the order of the columns and the order of col.numbers is incorrect.
 
@@ -62,6 +62,10 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
                               )
      col.numbers <- which(colnames(var.table) %in% var.names)
      
+     if (num.control.vars > 0) {
+         control.vars <- paste0(control.vars, " +")
+     }
+     
 
      ## Attempting to get the names from the tables
      #var.table.t <- as.character(quote(var.table, env = ))
@@ -80,15 +84,16 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
          temp <-
              adonis2(
                  formula = as.formula(paste(
-                     species.table.c, "~", control.vars, "+", var.names[i]
+                     species.table.c, "~", control.vars, var.names[i]
                  )),
                  permutations = perms,
-                 method = "bray",
+                 method = method,
                  by = by.adonis2,
                  data = var.table
              )
 
-          output$var.explnd[i] <- temp$SumOfSqs[1 + num.control.vars] / sum(temp$SumOfSqs)
+          output$var.explnd[i] <- temp$SumOfSqs[1 + num.control.vars] / 
+                                        temp$SumOfSqs[length(temp$SumOfSqs)]
           output$avg.var.explnd[i] <- output$var.explnd[i] / temp$Df[1 + num.control.vars]
           output$omega2[i] <- PERMANOVA.omega2(temp, num.control.vars)
           output$pseudo.F[i] <- temp$F[num.control.vars + 1]
@@ -155,6 +160,9 @@ group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars
     )
     col.numbers <- which(colnames(var.table) %in% var.names)
     
+    if (num.control.vars > 0) {
+        control.vars <- paste0(control.vars, " +")
+    }
     
     ## Attempting to get the names from the tables
     #var.table.t <- as.character(quote(var.table, env = ))
@@ -170,13 +178,18 @@ group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars
         ## update fubar'd something and taking it out was the easiest way to fix
         ## it. 
         
-        temp <- adonis2(formula = as.formula(paste(species.vector.c, "~", control.vars, "+", var.names[i])),
-                        permutations = perms, 
-                        method = method,
-                        by = by.adonis2,
-                        data = var.table)
+        temp <-
+            adonis2(
+                formula = as.formula(paste(
+                    species.vector.c, "~", control.vars, var.names[i]
+                )),
+                permutations = perms,
+                method = method,
+                by = by.adonis2,
+                data = var.table
+            )
         
-        output$var.explnd[i] <- temp$SumOfSqs[1 + num.control.vars] / sum(temp$SumOfSqs)
+        output$var.explnd[i] <- temp$SumOfSqs[1 + num.control.vars] / temp$SumOfSqs[length(temp$SumOfSqs)]
         output$avg.var.explnd[i] <- output$var.explnd[i] / temp$Df[1 + num.control.vars]
         output$omega2[i] <- PERMANOVA.omega2(temp, num.control.vars)
         output$pseudo.F[i] <- temp$F[num.control.vars + 1]
