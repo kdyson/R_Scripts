@@ -55,6 +55,10 @@ AICc.table.2var <- function(sig.vars, control.var.char = NULL, c.var = 0, matrix
     varcomb.2.AICc$`Relative Likelihood` <- exp((min(varcomb.2.AICc$AICc.values) -
                                                      varcomb.2.AICc$AICc.values)/2)
 
+    # Relative likelihood compared with best model; see
+    # https://en.wikipedia.org/wiki/Likelihood_function
+    
+    
 return(varcomb.2.AICc)
 
 }
