@@ -45,9 +45,6 @@ group.lmp <- function(group.vars, # should be character string
                                               summary.lmp.temp$coefficients[2,1])
         lmp.results$var.explnd[i] <- summary.lmp.temp$adj.r.squared
 
-        # veg.lmp.results$var.explnd[i] <- 1 - (anova(lm.temp)$`Sum Sq`[2]/sum(anova(lm.temp)$`Sum Sq`))
-        # veg.lmp.results$avg.var.explnd[i] <- veg.lmp.results$var.explnd[i] /
-        #     (summary.lmp.temp$df[1] - 1)
 
         lmp.results$F.stat.lmp[i] <- summary.lmp.temp$fstatistic["value"]
         lmp.results$prob.pval[i] <- summary.lmp.temp$coefficients[2,3]

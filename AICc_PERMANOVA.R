@@ -1,4 +1,4 @@
-# Function to calculate AICc for PERMANOVA. Requires input from adonis {vegan}
+# Function to calculate AICc for PERMANOVA. Requires input from adonis or adonis2 {vegan}
 
 
 AICc.PERMANOVA <- function(adonis.model) {
@@ -90,14 +90,4 @@ AICc.PERMANOVA2 <- function(adonis2.model) {
 }
 
 
-## Test code:
-
-# AICc.PERMANOVA(size.age.PERMANOVA)
-# 
-# adonis.model <- size.qual.PERMANOVA
-# 
-# size.qual.PERMANOVA <- adonis(formula = matrify.shrub.bysite ~ as.factor(sample.covariates$BldgQuality_lookup),
-#                               permutations = 99999, method = "bray")
-# size.qual.PERMANOVA$aov.tab[2,3]
-# size.qual.PERMANOVA$model.matrix
 

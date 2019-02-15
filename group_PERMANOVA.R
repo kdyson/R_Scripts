@@ -67,11 +67,6 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
      }
      
 
-     ## Attempting to get the names from the tables
-     #var.table.t <- as.character(quote(var.table, env = ))
-     #species.table.t <- as.character(var.table)
-
-     
 
      ## Populate the output table.
 
@@ -165,9 +160,8 @@ group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars
     }
     
     ## Attempting to get the names from the tables
-    #var.table.t <- as.character(quote(var.table, env = ))
-    #species.table.t <- as.character(var.table)
-    
+    #var.table.t <- deparse(substitute(var.table))
+
     
     
     ## Populate the output table.
@@ -218,29 +212,6 @@ group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars
 
 
 
-## Test Code...
-
-# var.names     <- non.management.vars.f <- c("DissolvedArea", "Proportion_ForeignBorn_B99051e5", "DistrictName",
-#                                           "MedianHouseholdIncome_B19013e1", "dissolved_parcel_500m_buffer_impervious_500m_mean")
-# var.table     <- sample.data.nf
-# var.table.c   <- "sample.data.nf"
-# species.table <- sqrt.matrify.OTU.genus.nf
-# species.table.c <- "sqrt.matrify.OTU.genus.nf"
-# control.vars  <- "vegetation_class + gc.simple"
-# num.control.vars <- 2
-# by.adonis2    <- "terms"
 
 
 
-
-# test <- group.PERMANOVA(var.names = non.management.vars.f, var.table =  sample.data, var.table.c = "sample.data",
-#                 species.table = sqrt.matrify.OTU.genus, species.table.c = "sqrt.matrify.OTU.genus",
-#                 control.vars = "sample.data$vegetation_class + sample.data$gc.simple", num.control.vars = 2,
-#                 by.adonis2 = "terms")
-#
-# adonis2(formula = sqrt.matrify.OTU.genus ~ sample.data$vegetation_class + sample.data$gc.simple +
-#              sample.data$Proportion_ForeignBorn_B99051e5,
-#         parallel = 2, permutations = 99999, method = "bray", by = "terms")
-#
-# adonis2(formula = as.formula(paste(species.table.c, "~", control.vars, "+ sample.data$", var.names[i])),
-#         parallel = 2, permutations = 99999, method = "bray", by = "terms")

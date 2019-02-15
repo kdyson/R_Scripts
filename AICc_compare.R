@@ -1,5 +1,5 @@
 
-# Test script to automate AICc calculation after deciding which of your variables are significant. Like, you have 3-4 candidate variables and you want to compare 1, 2, and 3/4 variable models based on AICc.
+# Test script to automate AICc calculation after deciding which of your variables are significant. Like, you have 4 candidate variables and you want to compare 1, 2, 3, and 4 variable models based on AICc.
 
 list.varcomb.AICc <- tibble(varibles = rep(0, 4*3*2),
                             AICc.values = rep(0))
