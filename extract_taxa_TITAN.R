@@ -8,29 +8,32 @@ require(data.table)
 
 extract.titan.taxa <-
     function(titan.out,
-             p.val.cutoff = 0.05,
+             purity.cutoff = 0.9,
+             reliability.cutoff = 0.9,
              taxa.label.name = "Genus") {
         titan.out <- titan.out
         
-        titan.out.p.val <- titan.out$sppmax %>%
+        titan.out.filtered <- titan.out$sppmax %>%
             as.data.frame() %>%
             rownames_to_column()
         
-        titan.out.p.val <-
-            titan.out.p.val[titan.out.p.val$obsiv.prob <= p.val.cutoff, ]
-        titan.out.p.val <-
-            titan.out.p.val[order(titan.out.p.val$zscore, decreasing = T), ]
-        titan.out.p.val <-
-            mutate(titan.out.p.val, zgrp = ifelse(maxgrp == 1, "z-", "z+"))
+        titan.out.filtered <-
+            titan.out.filtered[titan.out.filtered$purity >= purity.cutoff &
+                                   titan.out.filtered$reliability >= reliability.cutoff, ]
+        titan.out.filtered <-
+            titan.out.filtered[order(titan.out.filtered$zscore, decreasing = T), ] %>%
+            mutate(zgrp = ifelse(maxgrp == 1, "z-", "z+"))
         
         
         titan.out.taxonomy.summary <-
-            group_by(titan.out.p.val, zgrp, rowname) %>%
+            group_by(titan.out.filtered, zgrp, rowname) %>%
             summarise(
                 mean.zscore = mean(zscore),
                 mean.purity = mean(purity),
                 mean.reliability = mean(reliability),
-                median.zmedian = median(z.median)
+                mean.zenv.cp = mean(zenv.cp),
+                mean.5pct.cp = mean(`5%`),
+                mean.95pct.cp = mean(`95%`)
             )
         
         
@@ -41,7 +44,9 @@ extract.titan.taxa <-
                 "Mean Z Score",
                 "Mean Purity",
                 "Mean Reliability",
-                "Median Z Median Value"
+                "Mean Env CP z-max",
+                "Mean 5% CP",
+                "Mean 95% CP"
             )
         
         return(ungroup(titan.out.taxonomy.summary))
@@ -53,12 +58,17 @@ extract.titan.taxa <-
 
 ## For use with NGS data, could be made to work with phyloseq etc.
 
+# titan.out = I5CL.titan.pctN
+# taxonomy.table = raw_dada2_taxa
+
+
 extract.titan.taxa.NGS <-
     function(titan.out,
              taxonomy.table,
              taxonomy.table.merge = "taxa.label.unique",
              taxa.level = Genus,
-             p.val.cutoff = 0.05,
+             purity.cutoff = 0.90,
+             reliability.cutoff = 0.90,
              taxa.label.name = "taxa.label.unique",
              label = label) {
         titan.out <- titan.out
@@ -66,16 +76,18 @@ extract.titan.taxa.NGS <-
         label <- enquo(label)
         taxonomy.table <- taxonomy.table
         
-        titan.out.p.val <- titan.out$sppmax %>%
+        titan.out.filtered <- titan.out$sppmax %>%
             as.data.frame()
-        titan.out.p.val[, taxa.label.name] <- rownames(titan.out.p.val)
-        titan.out.p.val <-
-            titan.out.p.val[titan.out.p.val$obsiv.prob <= p.val.cutoff, ]
-        titan.out.p.val <-
-            titan.out.p.val[order(titan.out.p.val$zscore, decreasing = T), ]
-        titan.out.p.val <-
+        titan.out.filtered[, taxa.label.name] <-
+            rownames(titan.out.filtered)
+        titan.out.filtered <-
+            titan.out.filtered[titan.out.filtered$purity >= purity.cutoff &
+                                   titan.out.filtered$reliability >= reliability.cutoff, ]
+        titan.out.filtered <-
+            titan.out.filtered[order(titan.out.filtered$zscore, decreasing = T), ]
+        titan.out.filtered <-
             merge(
-                titan.out.p.val,
+                titan.out.filtered,
                 taxonomy.table,
                 by.x = taxa.label.name,
                 by.y = taxonomy.table.merge,
@@ -85,23 +97,31 @@ extract.titan.taxa.NGS <-
         
         
         titan.out.taxonomy.summary <-
-            group_by(titan.out.p.val, zgrp, !!taxa.level) %>%
+            group_by(titan.out.filtered, zgrp, !!taxa.level) %>%
             summarise(
                 mean.zscore = mean(zscore),
                 mean.purity = mean(purity),
                 mean.reliability = mean(reliability),
-                median.zmedian = median(z.median),
+                mean.zenv.cp = mean(zenv.cp),
+                mean.5pct.cp = mean(`5%`),
+                mean.95pct.cp = mean(`95%`),
                 count = n(),
                 svs = paste(unique(!!label), collapse = ";")
             )
         
         colnames(titan.out.taxonomy.summary)[1] <-
             "Decreasing/Increasing Z Taxa"
-        colnames(titan.out.taxonomy.summary)[3:7] <- c("Mean Z Score",
-                                                       "Mean Purity",
-                                                       "Mean Reliability",
-                                                       "Median Z Median Value",
-                                                       "Count")
+        colnames(titan.out.taxonomy.summary)[3:ncol(titan.out.taxonomy.summary)] <-
+            c(
+                "Mean Z Score",
+                "Mean Purity",
+                "Mean Reliability",
+                "Mean Env CP z-max",
+                "Mean 5% CP",
+                "Mean 95% CP",
+                "Count",
+                "All SVs or OTUs"
+            )
         
         return(ungroup(titan.out.taxonomy.summary))
         
@@ -193,7 +213,7 @@ cell.filler <-
                         paste0("Z-score: ",
                                z.score.text,
                                "; CP: ",
-                               temp.row[, "Median Z Median Value"] %>% round(round.val))
+                               temp.row[, "Mean Env CP z-max"] %>% round(round.val))
                     
                     taxa.comparison.table[j , i + 2] <- text
                     
@@ -273,7 +293,7 @@ combine.titan.results <-
                 taxa.col.name = taxa.col.name,
                 table.col.names = table.col.names,
                 z.score.pct.cutoff = z.score.pct.cutoff,
-                round.val = 3
+                round.val = round.val
             )
         
         summary.table.z2 <-
@@ -284,7 +304,7 @@ combine.titan.results <-
                 taxa.col.name = taxa.col.name,
                 table.col.names = table.col.names,
                 z.score.pct.cutoff = z.score.pct.cutoff,
-                round.val = 3
+                round.val = round.val
             )
         
         
