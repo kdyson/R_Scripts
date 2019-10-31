@@ -4,7 +4,7 @@ require(tibble)
 
 ## -- For two variables: ------------------------------------
 
-AICc.table.2var <- function(sig.vars, control.var.char = NULL, c.var = 0, matrix.char, perm = 999, type = "AICc", method = "bray") {
+AICc.table.2var <- function(sig.vars, control.var.char = NULL, c.var = 0, matrix.char, perm, type = "AICc", method = "bray") {
 
     varcomb.2.AICc <- tibble(variables = rep("var.name", choose(length(sig.vars),2)),
                              AICc.values = rep(0),
@@ -13,7 +13,7 @@ AICc.table.2var <- function(sig.vars, control.var.char = NULL, c.var = 0, matrix
                              `Var Explnd` = rep(0),
                              Model = rep("model"))
 
-    if (is.character(control.var.char) == TRUE & c.var == 0) {c.var = 1} 
+    if (is.character(control.var.char) == TRUE & c.var == 0) {c.var = length(control.var.char)} 
         
     combo.list <- combn(x = sig.vars, m = 2, simplify = FALSE)
 
@@ -52,11 +52,12 @@ AICc.table.2var <- function(sig.vars, control.var.char = NULL, c.var = 0, matrix
 
     varcomb.2.AICc$`Delta AICc` <- varcomb.2.AICc$AICc.values -
         min(varcomb.2.AICc$AICc.values)
-    varcomb.2.AICc$`Relative Likelihood` <- exp((min(varcomb.2.AICc$AICc.values) -
-                                                     varcomb.2.AICc$AICc.values)/2)
+    varcomb.2.AICc$`Relative Likelihood` <-
+        exp(-.5 * (varcomb.2.AICc$AICc.values - min(varcomb.2.AICc$AICc.values)))
 
     # Relative likelihood compared with best model; see
     # https://en.wikipedia.org/wiki/Likelihood_function
+    # https://www.rdocumentation.org/packages/qpcR/versions/1.4-1/topics/akaike.weights 
     
     
 return(varcomb.2.AICc)
@@ -68,7 +69,7 @@ return(varcomb.2.AICc)
 ## -- For N variables: ---------------------------------------------------
 
 
-AICc.table.Nvar <- function(sig.vars, control.var.char = NULL, c.var = 0, matrix.char, perm = 999, n.var = 1, composite = FALSE, type = "AICc", method = "bray") {
+AICc.table.Nvar <- function(sig.vars, control.var.char = NULL, c.var = 0, matrix.char, perm, n.var = 1, composite = FALSE, type = "AICc", method = "bray") {
 
     if (n.var > length(sig.vars)) { stop("n.var greater than number of significant variables")}
 
@@ -123,8 +124,8 @@ AICc.table.Nvar <- function(sig.vars, control.var.char = NULL, c.var = 0, matrix
 if (composite == FALSE) {
     varcomb.N.AICc$`Delta AICc` <- varcomb.N.AICc$AICc.values -
         min(varcomb.N.AICc$AICc.values)
-    varcomb.N.AICc$`Relative Likelihood` <- exp((min(varcomb.N.AICc$AICc.values) -
-                                                     varcomb.N.AICc$AICc.values)/2)
+    varcomb.2.AICc$`Relative Likelihood` <-
+        exp(-.5 * (varcomb.2.AICc$AICc.values - min(varcomb.2.AICc$AICc.values)))
     }
 
 
@@ -149,7 +150,7 @@ AICc.table.all <- function(sig.vars, control.var.char = NULL, matrix.char, perm 
 
         temp <- AICc.table.Nvar(sig.vars = control.var.char, control.var.char = NULL,
                                 matrix.char = matrix.char, n.var = 1, composite = TRUE,
-                                type = type, method = method)
+                                type = type, method = method, perm = perm)
 
         varcomb.all <- rbind(varcomb.all, temp)
 
@@ -161,7 +162,7 @@ AICc.table.all <- function(sig.vars, control.var.char = NULL, matrix.char, perm 
     
         temp <- AICc.table.Nvar(sig.vars = sig.vars, control.var.char = control.var.char,
                                 matrix.char = matrix.char, n.var = i, composite = TRUE,
-                                type = type, method = method)
+                                type = type, method = method, perm = perm)
     
         varcomb.all <- rbind(varcomb.all, temp)
     
