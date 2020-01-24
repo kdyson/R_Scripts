@@ -136,7 +136,7 @@ mp.summary$group <- ifelse(grepl("[1-9]..[1-9]", mp.summary$group),
                            mp.summary$group)
 
 
-if(ct == TRUE) {
+if(ct == TRUE & nrow(mp.summary) > 0) {
     
     mp.summary$groupname <- mp.summary$group
     mp.summary$groupname <- gsub(pattern = "\\.", replacement = "", mp.summary$group)
@@ -149,6 +149,13 @@ if(ct == TRUE) {
             
             }
     
+}
+
+if(ct == TRUE & nrow(mp.summary) == 0) {
+    
+    warning("There are no species returned")
+    
+    mp.summary[1,1] <- "No Species Returned"
 }
 
 

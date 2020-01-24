@@ -3,6 +3,9 @@
 ## adjusting pseudo-F values. Also calculates multivariate dispersion for
 ## categorical variables.
 
+require(vegan)
+require(tibble)
+
 # First, a quick function to calculate omega squared based on:
     # https://academic.oup.com/bioinformatics/article/31/15/2461/188732
     # http://www.real-statistics.com/multiple-regression/other-measures-effect-size-anova/ 
@@ -42,7 +45,7 @@ PERMANOVA.omega2 <- function(adonis2.object, num.control.vars) {
      ## by.adonsi2 is to pass through for the by = argument in adonis2
 
 
-group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = "", species.table, species.table.c, num.control.vars = 0, by.adonis2 = "terms", perms = 99999, method = "bray") {
+group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = "", species.table, species.table.c, num.control.vars = 0, by.adonis2 = "terms", AIC.type = "AICc", perms = 99999, method = "bray") {
 
      ## need to order columns otherwise the order of the columns and the order of col.numbers is incorrect.
 
@@ -51,14 +54,16 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
 
 
 
-     output <- data.frame(row.names = var.names,
+     output <- tibble(var.names = var.names,
                                          var.explnd = rep(NA, times = length(var.names)),
                                          avg.var.explnd = rep(NA),
                                          pseudo.F = rep(NA),
                                          F.pval = rep(NA),
                                          adj.F.pval = rep(NA),
                                          disp.F.pval = rep(NA),
-                                         adj.disp.F.pval = rep(NA)
+                                         adj.disp.F.pval = rep(NA),
+                                         omega2 = rep(NA),
+                                         AIC.stat = rep(NA)
                               )
      col.numbers <- which(colnames(var.table) %in% var.names)
      
@@ -93,7 +98,8 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
           output$omega2[i] <- PERMANOVA.omega2(temp, num.control.vars)
           output$pseudo.F[i] <- temp$F[num.control.vars + 1]
           output$F.pval[i] <- temp$`Pr(>F)`[num.control.vars + 1]
-          
+          output$AIC.stat[i] <- AICc.PERMANOVA2(temp)[[AIC.type]]
+
 
 
                # the ordering is so that col.names[i] works!
@@ -128,6 +134,8 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
          p.adjust(p = output$F.pval, method = "holm")
      output$adj.disp.F.pval <-
          p.adjust(p = output$disp.F.pval, method = "holm")
+     output$AIC.delta <- 
+         output$AIC.stat - min(output$AIC.stat)
 
 return(output)
      
@@ -136,7 +144,7 @@ return(output)
 }
 
 
-group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = "", species.vector, species.vector.c, num.control.vars = 0, by.adonis2 = "terms", perms = 99999, method = "euclid") {
+group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = "", species.vector, species.vector.c, num.control.vars = 0, by.adonis2 = "terms", perms = 99999, method = "euclid", AIC.type ="AICc") {
     
     ## need to order columns otherwise the order of the columns and the order of col.numbers is incorrect.
     
@@ -145,13 +153,14 @@ group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars
     
     
     
-    output <- data.frame(row.names = var.names,
+    output <- tibble(var.names = var.names,
                          var.explnd = rep(NA, times = length(var.names)),
                          avg.var.explnd = rep(NA),
                          pseudo.F = rep(NA),
                          F.pval = rep(NA),
                          adj.F.pval = rep(NA),
-                         AICc = rep(NA)
+                         omega2 = rep(NA),
+                         AIC.stat = rep(NA)
     )
     col.numbers <- which(colnames(var.table) %in% var.names)
     
@@ -188,7 +197,7 @@ group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars
         output$omega2[i] <- PERMANOVA.omega2(temp, num.control.vars)
         output$pseudo.F[i] <- temp$F[num.control.vars + 1]
         output$F.pval[i] <- temp$`Pr(>F)`[num.control.vars + 1]
-        output$AICc[i] <- AICc.PERMANOVA2(temp)[3]
+        output$AIC.stat[i] <- AICc.PERMANOVA2(temp)[[AIC.type]]
         
         
         
@@ -198,6 +207,8 @@ group.univ.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars
     }
     
     output$adj.F.pval <- p.adjust(p = output$F.pval, method = "holm")
+    output$delta.aic <- output$AIC.stat - min(output$AIC.stat)
+
 
     return(output)
     
