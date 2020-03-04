@@ -1,6 +1,9 @@
 ## Create AICc tables for PERMANOVA output.
+
 require(vegan)
 require(tibble)
+require(stringr)
+
 
 ## -- For two variables: ------------------------------------
 
@@ -178,7 +181,7 @@ AICc.table.all <- function(sig.vars, control.var.char = NULL, matrix.char, perm 
         for (i in 1:length(extra.var.char)) {
         temp <- AICc.table.Nvar(sig.vars = extra.var.char[i], control.var.char = control.var.char,
                                 matrix.char = matrix.char, n.var = 1, composite = TRUE, 
-                                type = type, method = method)
+                                type = type, method = method, perm = perm)
         
         varcomb.all <- rbind(varcomb.all, temp)
         
@@ -191,15 +194,63 @@ AICc.table.all <- function(sig.vars, control.var.char = NULL, matrix.char, perm 
     varcomb.all$`Relative Likelihood` <- exp((min(varcomb.all$AICc.values) -
                                                   varcomb.all$AICc.values)/2)
 
-
+# exp( -0.5 * ∆AIC score for that model)
 
     return(varcomb.all)
 
 }
 
 
+## -- Sum of AIC Weights by Var: ---------------------------------------------------
+
+# This requires an AIC/AICc table output from one of the above functions. The
+# rationalle behind this approach can be found in Arnold, T. W. (2010).
+# Uninformative parameters and model selection using Akaike's Information
+# Criterion. The Journal of Wildlife Management, 74(6), 1175-1178.
+
+# Calculation method from http://brianomeara.info/tutorials/aic
 
 
+AICc.weights.byvar <- function(sig.vars, AIC.table.output){
+    
+    results.table <- tibble("Significant Variable" = sig.vars,
+                            "Summed AIC Weight" = rep(0))
+
+    for (i in 1:length(sig.vars)){
+        
+        summed.weight = 0
+        
+        for (j in 1:nrow(AIC.table.output)){
+            
+            if (grepl(AIC.table.output$variables[j], pattern = sig.vars[i], fixed = TRUE)) {
+                
+                summed.weight <- summed.weight + AIC.table.output$`Relative Likelihood`[j]
+                
+            } else summed.weight <- summed.weight
+            
+            
+        }
+        #sig vars loop
+        
+        results.table[i, 2] <- summed.weight
+        
+    }
+    # function loop
+    
+    return(results.table)
+}
+    
+
+
+# create a table with sig vars fed into the table + AIC weight sum column
+#     
+# for each significant variable,
+#     for each row
+#         check each row to see if there is a pattern match
+#         add the relative likelihood to sum if so         
+#         
+# report 
+    
 
 
 
