@@ -120,7 +120,7 @@ group.PERMANOVA <- function(var.names, var.table, var.table.c, control.vars = ""
               
               else {temp.disp <-
                   anova(betadisper(
-                      vegdist(species.table, method = "bray"),
+                      vegdist(species.table, method = method),
                       as.factor(var.table[[col.numbers[i]]])
                   ))
               
