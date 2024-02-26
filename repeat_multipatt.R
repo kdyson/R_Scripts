@@ -14,7 +14,7 @@
 
 
 
-repeat.multipatt <- function(repeats = 100, matrix.name, cluster.name, p.cutoff = .1, func.name = "IndVal.g", phi = FALSE, plot.please = TRUE, plot.colors = c("deeppink2", "cyan3", "yellowgreen", "gray 50", "violet"), freq.cutoff = .5, xlab.input = "Indicator Species \n(freq > 50%)", ylab.input = "Mean Indicator Value over 100 Runs", quiet = TRUE, stat.cutoff = .5, graph.stat.cutoff = .75) {
+repeat.multipatt <- function(repeats = 100, matrix.name, cluster.name, p.cutoff = .1, func.name = "IndVal.g", phi = FALSE, plot.please = TRUE, plot.colors = c("deeppink2", "cyan3", "yellowgreen", "gray 50", "violet"), freq.cutoff = .5, xlab.input = "Indicator Species \n(freq > 50%)", ylab.input = "Mean Indicator Value over 100 Runs", quiet = FALSE, stat.cutoff = .5, graph.stat.cutoff = .75) {
 
     library(ggplot2)
     library(dplyr)
@@ -168,9 +168,8 @@ mp.summary$group <- paste("Group", gsub(pattern = "\\.", replacement = "", mp.su
 
 if (func.name %in% c("IndVal", "IndVal.g")) {
         mp.AB.summary  <- group_by(mp.AB.dump, species) %>%
-                            summarize_all(funs(mean))
+                            summarize_all(.funs = list(mean = mean))
             mp.AB.summary$i <- NULL
-            colnames(mp.AB.summary)[-1] <- paste(colnames(mp.AB.summary[-1]), "mean", sep = ".")
 
         mp.AB.summary <- cbind(mp.AB.summary,
                                group_by(mp.AB.dump, species) %>%
@@ -190,7 +189,7 @@ if (plot.please == TRUE) {
 
         mp.plot <- ggplot(subset(mp.summary, frequency.sp > freq.cutoff & mean.stat > graph.stat.cutoff),
                           aes(x = reorder(species, mean.stat))) +
-                geom_bar(aes(y = mean.stat, fill = group), alpha = .75, stat = "identity") +
+                geom_bar(aes(y = mean.stat, fill = groupname), alpha = .75, stat = "identity") +
                 geom_text(aes(y = mean.stat, label = mean.stat), hjust = 1.2) +
                 facet_grid(group ~ ., scales = "free_x") + coord_flip() + guides(fill = "none") +
                 xlab(xlab.input) + ylab(ylab.input) +
